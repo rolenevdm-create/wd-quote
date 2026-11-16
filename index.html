@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#111111">
+<meta name="mobile-web-app-capable" content="yes">
+<title>WD Quote</title>
+<link rel="manifest" href="manifest.json">
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; background: #fff; color: #111; }
+  body { font-family: -apple-system, Roboto, 'Segoe UI', sans-serif; }
+  header { background: #111; color: #fff; text-align: center; padding: 12px 16px 10px; font-family: Georgia, serif; }
+  header .w { letter-spacing: .38em; font-size: 16px; }
+  header .e { letter-spacing: .3em; font-size: 9px; opacity: .75; margin-top: 3px; }
+  main { padding: 14px 18px 120px; max-width: 560px; margin: 0 auto; }
+  .bar { display: flex; gap: 6px; margin: 2px 0 18px; }
+  .bar i { flex: 1; height: 4px; border-radius: 2px; background: #e3e3e3; }
+  .bar i.on { background: #111; }
+  .step { font-size: 13px; letter-spacing: .14em; text-transform: uppercase; color: #777; }
+  h1 { font-family: Georgia, serif; font-weight: normal; font-size: 28px; line-height: 1.2; margin: 4px 0 14px; }
+  .hint { font-size: 15px; color: #555; margin: -6px 0 14px; line-height: 1.4; }
+  textarea, input { width: 100%; font-size: 21px; padding: 16px; border: 2px solid #111; border-radius: 12px; background: #fff; color: #111; font-family: inherit; }
+  textarea { min-height: 170px; resize: vertical; line-height: 1.4; }
+  input:focus, textarea:focus { outline: none; box-shadow: 0 0 0 4px rgba(0,0,0,.12); }
+  .show { font-size: 26px; font-family: Georgia, serif; margin-top: 12px; min-height: 32px; }
+  .show.bad { font-size: 16px; color: #b00020; font-family: inherit; }
+  .sub { font-size: 16px; color: #555; margin-top: 4px; }
+  .mic { display: flex; align-items: center; gap: 12px; background: #f4f4f4; border-radius: 12px; padding: 12px 14px; margin: 14px 0 0; font-size: 15px; line-height: 1.35; color: #333; }
+  .mic svg { flex: 0 0 26px; }
+  .bigmic { display: none; margin: 18px auto 0; width: 128px; height: 128px; border-radius: 50%; border: 0; background: #111; color: #fff; font-size: 15px; padding: 0; box-shadow: 0 6px 18px rgba(0,0,0,.25); }
+  .bigmic svg { display: block; margin: 0 auto 4px; }
+  .bigmic.live { background: #b00020; animation: pulse 1.2s infinite; }
+  @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(176,0,32,.5); } 50% { box-shadow: 0 0 0 18px rgba(176,0,32,0); } }
+  .micnote { text-align: center; font-size: 15px; color: #555; margin-top: 10px; }
+  body.hasmic .mic { display: none; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+  .chips button { padding: 12px 16px; font-size: 17px; border-radius: 22px; }
+  .sugg { margin-top: 10px; border: 1px solid #ddd; border-radius: 12px; overflow: hidden; }
+  .sugg button { display: block; width: 100%; text-align: left; border: 0; border-bottom: 1px solid #eee; border-radius: 0; padding: 17px 16px; font-size: 19px; background: #fff; }
+  .sugg button:last-child { border-bottom: 0; }
+  .sugg small { display: block; color: #888; font-size: 14px; margin-top: 2px; }
+  .none { padding: 14px 16px; color: #b00020; font-size: 16px; }
+  .picked { margin-top: 12px; padding: 16px; border-radius: 12px; background: #111; color: #fff; font-size: 20px; display: flex; justify-content: space-between; align-items: center; }
+  .picked button { background: transparent; color: #fff; border: 1px solid #fff; padding: 8px 12px; font-size: 15px; border-radius: 8px; }
+  .warn { color: #b00020; font-size: 17px; margin-top: 12px; min-height: 22px; }
+  .foot { position: fixed; left: 0; right: 0; bottom: 0; background: #fff; border-top: 1px solid #e5e5e5; padding: 10px 14px calc(10px + env(safe-area-inset-bottom)); }
+  .foot .in { max-width: 560px; margin: 0 auto; display: grid; grid-template-columns: 1fr 2fr; gap: 10px; }
+  button { font-family: inherit; font-size: 18px; padding: 17px 10px; border-radius: 12px; border: 2px solid #111; background: #fff; color: #111; }
+  button.primary { background: #111; color: #fff; }
+  button.wide { grid-column: 1 / -1; }
+  button.link { border: 0; background: none; padding: 10px 0; font-size: 16px; text-decoration: underline; color: #555; }
+  .review .row { display: flex; justify-content: space-between; gap: 12px; border-bottom: 1px solid #e5e5e5; padding: 15px 0; font-size: 18px; }
+  .review .row b { font-weight: normal; color: #777; font-size: 14px; letter-spacing: .1em; text-transform: uppercase; flex: 0 0 34%; padding-top: 3px; }
+  .review .row span { flex: 1; text-align: right; white-space: pre-wrap; }
+  .review .row.tall span { text-align: left; }
+  .review .row button { flex: 0 0 auto; padding: 6px 10px; font-size: 14px; border-width: 1px; border-radius: 8px; align-self: flex-start; }
+  .total { font-family: Georgia, serif; font-size: 22px; }
+  .done { text-align: center; padding-top: 30px; }
+  .done .tick { font-size: 64px; }
+</style>
+</head>
+<body>
+<header><div class="w">W E R N E R &nbsp; D E Y</div><div class="e">E S T . &nbsp; 1 9 9 6</div></header>
+<main id="app"></main>
+<div class="foot" id="foot"></div>
+
+<script>
+const API = 'https://script.google.com/macros/s/AKfycbygaN8jldNit93YsQKO_cinOubBIq52tGgbELMol_zByrwmCAhtU2nHQb23LRQ0O5V3Dw/exec';
+window.google = { script: { get run() {
+  let ok = () => {}, bad = e => console.error(e);
+  const p = new Proxy({}, { get(_, name) {
+    if (name === 'withSuccessHandler') return f => { ok = f; return p; };
+    if (name === 'withFailureHandler') return f => { bad = f; return p; };
+    return (...args) => fetch(API, { method: 'POST', redirect: 'follow', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ fn: name, args: args }) })
+      .then(r => r.json()).then(j => { if (j.error) throw new Error(j.error); ok(j.result); })
+      .catch(e => bad(e && e.message ? e : new Error('No connection. Check the phone has signal and try again.')));
+  } });
+  return p;
+} } };
+</script>
+<script>
+/* =====================================================================
+   WD Quote — phone screen. Server functions (Code.gs) are unchanged:
+   checkPin(pin), listClients(pin), createQuote(pin, data).
+   Speaking: the phone keyboard's microphone works in every box.
+   If the page is ever hosted where the browser allows the microphone,
+   a big "Tap and speak" button appears automatically.
+   ===================================================================== */
+
+const MIC_W = '<svg width="44" height="44" viewBox="0 0 24 24" fill="#fff"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-2.08A7 7 0 0 0 19 12h-2z"/></svg>';
+const STEPS = ['client', 'description', 'total', 'discount', 'deposit', 'message'];
+const MIC_SVG = '<svg width="26" height="26" viewBox="0 0 24 24" fill="#111"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-2.08A7 7 0 0 0 19 12h-2z"/></svg>';
+
+let CLIENTS = null, clientsErr = '';
+let PIN = '';
+let S = blank();
+function blank() {
+  return { mode: 'step', i: 0, fromReview: false,
+           a: { client: '', description: '', total: '', discount: '', deposit: '', message: '' },
+           customer: null, result: null, error: '' };
+}
+try { PIN = localStorage.getItem('wd_pin') || ''; } catch (e) {}
+try {
+  const d = JSON.parse(localStorage.getItem('wd_draft2') || 'null');
+  if (d && d.a) { S.a = Object.assign(S.a, d.a); S.customer = d.customer || null; S.i = d.i || 0; }
+} catch (e) {}
+function saveDraft() { try { localStorage.setItem('wd_draft2', JSON.stringify({ a: S.a, customer: S.customer, i: S.i })); } catch (e) {} }
+function clearDraft() { try { localStorage.removeItem('wd_draft2'); } catch (e) {} }
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const norm = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
+function fmt(n) { n = Math.round(n * 100) / 100; return 'R' + n.toFixed(n % 1 ? 2 : 0).replace(/\B(?=(\d{3})+(?!\d))/g, ' '); }
+
+/* ---------- Amounts: typed or spoken ----------
+   "45000", "45 000", "R45,000", "45k", "forty five thousand",
+   "22 and a half thousand", "45 thousand 500"                         */
+const UNITS = { zero:0, one:1, two:2, three:3, four:4, five:5, six:6, seven:7, eight:8, nine:9, ten:10, eleven:11, twelve:12,
+  thirteen:13, fourteen:14, fifteen:15, sixteen:16, seventeen:17, eighteen:18, nineteen:19, twenty:20, thirty:30, forty:40,
+  fourty:40, fifty:50, sixty:60, seventy:70, eighty:80, ninety:90, a:1 };
+function parseAmount(raw) {
+  let s = String(raw || '').toLowerCase().trim().replace(/[.!?]+$/, '').trim();
+  if (!s) return null;
+  s = s.replace(/rand|zar|incl(uding)?\.?( vat)?|vat|ex(cl)?\.?/g, ' ').replace(/^r\s*/, '').replace(/\s*r(?=\d)/g, ' ');
+  // pure digits with spaces/commas
+  let c = s.replace(/\s/g, '');
+  if (/,\d{1,2}$/.test(c)) c = c.replace(/,(\d{1,2})$/, '.$1');
+  c = c.replace(/,/g, '');
+  let m = c.match(/^(\d+(?:\.\d+)?)(k)?$/);
+  if (m) { const n = parseFloat(m[1]) * (m[2] ? 1000 : 1); return n > 0 ? Math.round(n * 100) / 100 : null; }
+  // words / mixed
+  s = s.replace(/,/g, '').replace(/-/g, ' ').replace(/\band a half\b/g, ' point5 ').replace(/\bhalf\b/g, ' point5 ');
+  const toks = s.split(/\s+/).filter(Boolean);
+  let total = 0, cur = 0, any = false;
+  for (const t of toks) {
+    if (t === 'and') continue;
+    if (t === 'point5') { cur += 0.5; any = true; continue; }
+    if (/^\d+(\.\d+)?k$/.test(t)) { total += parseFloat(t) * 1000; any = true; continue; }
+    if (/^\d+(\.\d+)?$/.test(t)) { cur += parseFloat(t); any = true; continue; }
+    if (t in UNITS) { cur += UNITS[t]; any = true; continue; }
+    if (t === 'hundred') { cur = (cur || 1) * 100; any = true; continue; }
+    if (t === 'thousand' || t === 'grand') { total += (cur || 1) * 1000; cur = 0; any = true; continue; }
+    if (t === 'million') { total += (cur || 1) * 1e6; cur = 0; any = true; continue; }
+    return null;
+  }
+  const n = total + cur;
+  return any && n > 0 ? Math.round(n * 100) / 100 : null;
+}
+/* Discount: amount, or percentage ("10%", "10 percent", "ten percent") */
+function parseDiscount(raw, total) {
+  const s = String(raw || '').toLowerCase().trim();
+  if (!s || /^(no|none|nothing|geen|skip|0)$/.test(s.replace(/[.!]/g, ''))) return { amt: 0, pct: null };
+  const p = s.match(/^(.*?)\s*(%|per ?cent|persent)\.?$/);
+  if (p) {
+    const pct = parseAmount(p[1].replace(',', '.'));
+    if (pct == null || pct >= 100 || !total) return null;
+    return { amt: Math.round(total * pct) / 100, pct: pct };
+  }
+  const a = parseAmount(s);
+  return a == null ? null : { amt: a, pct: null };
+}
+
+/* ---------- Voice commands (spoken through the keyboard mic) ----------
+   Say "delete" or "clear" at the end → that box is emptied.
+   Say "next" at the end → goes to the next question.
+   Say "start again" → whole quote is cleared (asks first).            */
+function voiceCommand(k, el) {
+  const v = el.value;
+  const tail = v.toLowerCase().replace(/[.!?,\s]+$/, '');
+  if (/(^|\s)start (again|over)$/.test(tail)) { el.value = v.replace(/\s*start (again|over)[.!?,\s]*$/i, ''); S.a[k] = el.value; startAgain(); return true; }
+  if (/(^|\s)(delete|clear)( (that|it|all))?$/.test(tail)) { el.value = ''; S.a[k] = ''; if (k === 'client') S.customer = null; saveDraft(); paint(); return true; }
+  if (/(^|\s)next$/.test(tail) && k !== 'client') { el.value = v.replace(/\s*next[.!?,\s]*$/i, ''); S.a[k] = el.value; saveDraft(); next(); return true; }
+  return false;
+}
+
+/* ---------- Client matching (forgiving, so spoken names still find) ---------- */
+function bigrams(w) { const g = []; for (let i = 0; i < w.length - 1; i++) g.push(w.slice(i, i + 2)); return g; }
+function sim(a, b) {
+  if (!a || !b) return 0;
+  if (b.indexOf(a) === 0 || a.indexOf(b) === 0) return 1;
+  const x = bigrams(a), y = bigrams(b); if (!x.length || !y.length) return 0;
+  let hit = 0; const yy = y.slice();
+  x.forEach(g => { const i = yy.indexOf(g); if (i > -1) { hit++; yy.splice(i, 1); } });
+  return 2 * hit / (x.length + y.length);
+}
+function matchClients(q) {
+  q = norm(q); if (q.length < 2 || !CLIENTS) return [];
+  const qw = q.split(' ');
+  return CLIENTS.map(c => {
+    const nw = norm(c.name).split(' ');
+    const score = qw.reduce((s, w) => s + Math.max.apply(null, nw.map(n => sim(w, n))), 0) / qw.length;
+    return { c: c, score: score };
+  }).filter(x => x.score >= 0.55).sort((a, b) => b.score - a.score).slice(0, 6).map(x => x.c);
+}
+
+function loadClients() {
+  google.script.run
+    .withSuccessHandler(list => { CLIENTS = list || []; clientsErr = ''; paint(); })
+    .withFailureHandler(err => { clientsErr = String(err && err.message || err); if (clientsErr.indexOf('PIN') !== -1) return fail(err); paint(); })
+    .listClients(PIN);
+}
+
+/* ---------- Optional big mic button (only shows where the browser allows it) ---------- */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let micOK = null, rec = null;
+function tryBigMic(k) {
+  const btn = $('bigmic'), note = $('micnote'); if (!btn || !SR || micOK === false) return;
+  document.body.classList.add('hasmic');
+  btn.style.display = 'block';
+  note.innerHTML = 'Say <b>“delete”</b> to clear · <b>“next”</b> to go on';
+  const long = (k === 'description' || k === 'message');
+  const idle = () => { btn.classList.remove('live'); btn.innerHTML = MIC_W + 'Tap to talk'; };
+  btn.onclick = () => {
+    if (rec) { rec.stop(); return; }
+    const el = $('f'); if (el) el.blur();
+    rec = new SR(); rec.lang = 'en-ZA'; rec.interimResults = false; rec.continuous = long;
+    btn.classList.add('live'); btn.innerHTML = MIC_W + (long ? 'Listening…<br>tap when done' : 'Listening…');
+    rec.onresult = e => {
+      const said = Array.from(e.results).slice(e.resultIndex).map(r => r[0].transcript).join(' ').trim();
+      const el = $('f'); if (!el || !said) return;
+      const low = said.toLowerCase().replace(/[.!?,]/g, '').trim();
+      if (/^(delete|clear)( (that|it|all))?$/.test(low)) { el.value = ''; S.a[k] = ''; if (k === 'client') S.customer = null; saveDraft(); paint(); return; }
+      if (/^next$/.test(low)) { rec.stop(); next(); return; }
+      if (/^(start (again|over))$/.test(low)) { rec.stop(); startAgain(); return; }
+      if (/^back$/.test(low)) { rec.stop(); back(); return; }
+      el.value = long && el.value.trim() ? el.value.replace(/\s*$/, ' ') + said : said;
+      el.dispatchEvent(new Event('input'));
+    };
+    rec.onerror = e => { if (e.error === 'not-allowed' || e.error === 'service-not-allowed') { micOK = false; btn.style.display = 'none'; note.textContent = ''; document.body.classList.remove('hasmic'); } };
+    rec.onend = () => { rec = null; idle(); };
+    try { rec.start(); micOK = true; } catch (e) { rec = null; idle(); }
+  };
+}
+/* ---------- Flow ---------- */
+function values() {
+  const t = parseAmount(S.a.total);
+  const d = parseDiscount(S.a.discount, t);
+  const pays = t != null && d ? Math.round((t - d.amt) * 100) / 100 : null;
+  const dep = parseAmount(S.a.deposit);
+  return { t, d, pays, dep };
+}
+function problem(k) {
+  const v = values();
+  if (k === 'client' && !S.customer) return S.a.client.trim() ? 'Tap the right name in the list.' : 'Say or type the client’s name, then tap it in the list.';
+  if (k === 'description' && !S.a.description.trim()) return 'Describe the dress first.';
+  if (k === 'total' && v.t == null) return 'I didn’t catch an amount. Try “45 000”.';
+  if (k === 'discount') { if (!v.d) return 'Say an amount (“5 000”) or a percentage (“10 percent”), or tap No discount.'; if (v.d.amt >= v.t) return 'The discount is more than the total.'; }
+  if (k === 'deposit') { if (v.dep == null) return 'I didn’t catch the deposit. Try “20 000”.'; if (v.dep > v.pays) return 'The deposit is more than what the client pays.'; }
+  return '';
+}
+function next() {
+  const k = STEPS[S.i], err = problem(k);
+  if (err) { const w = $('err'); if (w) w.textContent = err; return; }
+  if (S.fromReview || S.i === STEPS.length - 1) { S.mode = 'review'; S.fromReview = false; }
+  else S.i++;
+  saveDraft(); render();
+}
+function back() { if (S.mode === 'review') { S.mode = 'step'; S.i = STEPS.length - 1; } else if (S.i > 0) S.i--; render(); }
+function jump(i) { S.mode = 'step'; S.i = i; S.fromReview = true; render(); }
+function skip(k) { S.a[k] = ''; saveDraft(); next(); }
+function startAgain() {
+  if (!confirm('Clear this whole quote and start again?')) { render(); return; }
+  clearDraft(); S = blank(); render();
+}
+function pickClient(id) {
+  const c = (CLIENTS || []).find(x => x.id === id); if (!c) return;
+  S.customer = { id: c.id, name: c.name }; S.a.client = c.name; saveDraft(); next();
+}
+function unpick() { S.customer = null; S.a.client = ''; saveDraft(); render(); }
+function setDeposit(pct) { const v = values(); if (v.pays == null) return; S.a.deposit = String(Math.round(v.pays * pct) / 100); saveDraft(); render(); }
+
+function save() {
+  const v = values();
+  S.mode = 'saving'; render();
+  google.script.run
+    .withSuccessHandler(r => { S.result = r; S.mode = 'done'; clearDraft(); render(); })
+    .withFailureHandler(fail)
+    .createQuote(PIN, {
+      customerId: S.customer.id, clientName: S.customer.name,
+      description: S.a.description.trim(), total: v.t,
+      discount: v.d.amt, discountPercent: v.d.pct,
+      deposit: v.dep, message: S.a.message.trim()
+    });
+}
+function fail(err) {
+  const msg = String(err && err.message || err);
+  if (msg.indexOf('PIN') !== -1) { try { localStorage.removeItem('wd_pin'); } catch (e) {} PIN = ''; render(); return; }
+  S.error = msg; S.mode = 'error'; render();
+}
+function submitPin() {
+  const p = $('pin').value.trim(); if (!p) return;
+  google.script.run.withSuccessHandler(ok => {
+    if (ok) { PIN = p; try { localStorage.setItem('wd_pin', p); } catch (e) {} loadClients(); render(); }
+    else { $('pinmsg').textContent = 'Wrong PIN'; }
+  }).withFailureHandler(fail).checkPin(p);
+}
+
+/* ---------- Screens ---------- */
+const Q = {
+  client:      { q: 'Who is the client?', hint: 'Say the name. Then tap it in the list.', box: 'input', ph: 'Client name' },
+  description: { q: 'Describe the dress', hint: 'Talk as long as you like. It all goes on the quote.', box: 'textarea', ph: 'e.g. Ivory silk mermaid gown with lace sleeves and a cathedral train' },
+  total:       { q: 'Total price?', hint: 'Including VAT.', box: 'input', ph: 'e.g. 45 000' },
+  discount:    { q: 'Any discount?', hint: 'An amount or a percentage.', box: 'input', ph: 'e.g. 10 percent' },
+  deposit:     { q: 'Deposit?', hint: 'Say the amount, or tap a button.', box: 'input', ph: 'e.g. 20 000' },
+  message:     { q: 'Personal message to the client', hint: 'Optional. Admin adds it to the email.', box: 'textarea', ph: 'e.g. It was lovely meeting you…' }
+};
+
+function foot(html) { $('foot').innerHTML = html ? '<div class="in">' + html + '</div>' : ''; $('foot').style.display = html ? 'block' : 'none'; }
+
+function render() {
+  const app = $('app');
+  if (!PIN) {
+    app.innerHTML = '<h1>Enter the PIN</h1><input id="pin" type="password" inputmode="numeric" autocomplete="off"><div class="warn" id="pinmsg"></div>';
+    foot('<button class="primary wide" onclick="submitPin()">Continue</button>');
+    $('pin').addEventListener('keydown', e => { if (e.key === 'Enter') submitPin(); });
+    return;
+  }
+  if (S.mode === 'step') {
+    const k = STEPS[S.i], q = Q[k];
+    const bar = STEPS.map((_, j) => '<i class="' + (j <= S.i ? 'on' : '') + '"></i>').join('');
+    const box = q.box === 'textarea'
+      ? '<textarea id="f" autocapitalize="sentences" placeholder="' + esc(q.ph) + '"></textarea>'
+      : '<input id="f" autocomplete="off" ' + (k === 'client' ? 'autocapitalize="words"' : '') + ' placeholder="' + esc(q.ph) + '" enterkeyhint="next">';
+    let extra = '';
+    if (k === 'client') extra = '<div id="clientArea"></div>';
+    else if (k !== 'description' && k !== 'message') extra = '<div class="show" id="show"></div><div class="sub" id="showsub"></div>';
+    if (k === 'deposit') extra += '<div class="chips"><button onclick="setDeposit(50)">50%</button><button onclick="setDeposit(40)">40%</button><button onclick="setDeposit(30)">30%</button></div>';
+    app.innerHTML = '<div class="bar">' + bar + '</div><div class="step">Step ' + (S.i + 1) + ' of ' + STEPS.length + '</div>' +
+      '<h1>' + q.q + '</h1><div class="hint">' + q.hint + '</div>' + box + extra +
+      '<button class="bigmic" id="bigmic">' + MIC_W + 'Tap to talk</button><div class="micnote" id="micnote"></div>' +
+      '<div class="mic">' + MIC_SVG + '<div>Tap the <b>microphone on the keyboard</b> and speak.<br>Made a mistake? Say <b>“delete”</b>.</div></div>' +
+      '<div class="warn" id="err"></div>' +
+      (k === 'discount' ? '<button class="link" onclick="skip(\'discount\')">No discount</button>' : '') +
+      (k === 'message' ? '<button class="link" onclick="skip(\'message\')">No message</button>' : '') +
+      '<br><button class="link" onclick="startAgain()">Start the whole quote again</button>';
+    const last = S.fromReview || S.i === STEPS.length - 1;
+    foot((S.i > 0 || S.fromReview ? '<button onclick="' + (S.fromReview ? 'S.fromReview=false;S.mode=\'review\';render()' : 'back()') + '">Back</button>' : '<span></span>') +
+         '<button class="primary" onclick="next()">' + (last ? 'Check quote' : 'Next') + '</button>');
+    const el = $('f');
+    if (k === 'client' && S.customer) el.style.display = 'none';
+    el.value = S.a[k];
+    el.addEventListener('input', () => {
+      S.a[k] = el.value;
+      if (k === 'client') S.customer = null;
+      if (voiceCommand(k, el)) return;
+      saveDraft(); $('err').textContent = ''; paint();
+    });
+    if (q.box === 'input') el.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); next(); } });
+    paint(); tryBigMic(k);
+    if (!(k === 'client' && S.customer) && !(SR && micOK !== false)) setTimeout(() => { el.focus(); const n = el.value.length; try { el.setSelectionRange(n, n); } catch (e) {} }, 60);
+    return;
+  }
+  if (S.mode === 'review') {
+    const v = values();
+    const row = (label, val, i, tall) => '<div class="row' + (tall ? ' tall' : '') + '"><b>' + label + '</b><span>' + val + '</span>' + (i != null ? '<button onclick="jump(' + i + ')">Change</button>' : '') + '</div>';
+    let h = '<h1>Check the quote</h1><div class="review">' +
+      row('Client', esc(S.customer.name), 0) +
+      row('Dress', esc(S.a.description.trim()), 1, true) +
+      row('Total', '<span class="total">' + fmt(v.t) + '</span>', 2);
+    if (v.d.amt > 0) h += row('Discount', '− ' + fmt(v.d.amt) + (v.d.pct != null ? ' (' + v.d.pct + '%)' : ''), 3) + row('Client pays', '<span class="total">' + fmt(v.pays) + '</span>');
+    else h += row('Discount', 'None', 3);
+    h += row('Deposit', fmt(v.dep), 4) + row('Message', esc(S.a.message.trim() || '—'), 5, true) + '</div>' +
+      '<br><button class="link" onclick="startAgain()">Start the whole quote again</button>';
+    app.innerHTML = h;
+    foot('<button onclick="back()">Back</button><button class="primary" onclick="save()">Send to Admin</button>');
+    return;
+  }
+  if (S.mode === 'saving') { app.innerHTML = '<div class="done"><h1>Saving in Zoho…</h1></div>'; foot(''); return; }
+  if (S.mode === 'done') {
+    app.innerHTML = '<div class="done"><div class="tick">✓</div><h1>Sent to Admin</h1><div class="hint" style="margin:0">Quote <b>' + esc(S.result.number) + '</b> is waiting in Zoho as a draft.</div>' +
+      (S.result.warning ? '<div class="warn">' + esc(S.result.warning) + '</div>' : '') + '</div>';
+    foot('<button class="primary wide" onclick="S = blank(); loadClients(); render();">New quote</button>');
+    return;
+  }
+  if (S.mode === 'error') {
+    app.innerHTML = '<h1>Not saved</h1><div class="warn">' + esc(S.error) + '</div><div class="hint" style="margin-top:12px">Nothing is lost. Tap Try again.</div>';
+    foot('<button onclick="S.mode=\'review\'; render();">Back</button><button class="primary" onclick="save()">Try again</button>');
+  }
+}
+
+/* Live feedback under the box, without rebuilding the screen */
+function paint() {
+  if (S.mode !== 'step') return;
+  const k = STEPS[S.i], v = values();
+  if (k === 'client') {
+    const area = $('clientArea'), el = $('f'); if (!area) return;
+    if (S.customer) { el.style.display = 'none'; area.innerHTML = '<div class="picked">✓ ' + esc(S.customer.name) + '<button onclick="unpick()">Change</button></div>'; return; }
+    el.style.display = '';
+    if (norm(S.a.client).length < 2) { area.innerHTML = ''; return; }
+    if (CLIENTS === null) { area.innerHTML = '<div class="sugg"><div class="none" style="color:#777">' + (clientsErr ? 'Could not load clients from Zoho.' : 'Loading clients…') + '</div></div>'; return; }
+    const hits = matchClients(S.a.client);
+    area.innerHTML = '<div class="sugg">' + (hits.length
+      ? hits.map(c => '<button type="button" onclick="pickClient(\'' + esc(c.id) + '\')">' + esc(c.name) + (c.email ? '<small>' + esc(c.email) + '</small>' : '') + '</button>').join('')
+      : '<div class="none">Not in Zoho yet. Ask Admin to add this client first.</div>') + '</div>';
+    return;
+  }
+  const show = $('show'), sub = $('showsub'); if (!show) return;
+  const raw = S.a[k].trim();
+  show.className = 'show'; sub.textContent = '';
+  if (!raw) { show.textContent = ''; return; }
+  if (k === 'total') { if (v.t == null) { show.className = 'show bad'; show.textContent = 'Not an amount yet'; } else show.textContent = fmt(v.t); }
+  if (k === 'discount') {
+    if (!v.d) { show.className = 'show bad'; show.textContent = 'Not a discount yet'; }
+    else { show.textContent = v.d.amt ? '− ' + fmt(v.d.amt) : 'No discount'; if (v.d.amt) sub.textContent = 'Client pays ' + fmt(v.pays); }
+  }
+  if (k === 'deposit') {
+    if (v.dep == null) { show.className = 'show bad'; show.textContent = 'Not an amount yet'; }
+    else { show.textContent = fmt(v.dep); if (v.pays) sub.textContent = 'Balance after deposit ' + fmt(v.pays - v.dep); }
+  }
+}
+
+if (PIN) loadClients();
+render();
+</script>
+</body>
+</html>
