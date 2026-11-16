@@ -57,9 +57,6 @@
   .review .row.tall span { text-align: left; }
   .review .row button { flex: 0 0 auto; padding: 6px 10px; font-size: 14px; border-width: 1px; border-radius: 8px; align-self: flex-start; }
   .total { font-family: Georgia, serif; font-size: 22px; }
-  .kindbtn { display: block; width: 100%; margin-top: 12px; padding: 20px 16px; font-size: 24px; text-align: left; font-weight: 600; }
-  .kindbtn small { display: block; font-size: 15px; font-weight: 400; color: #555; margin-top: 4px; }
-  .kindbtn.on { background: #111; color: #fff; } .kindbtn.on small { color: #ddd; }
   .done { text-align: center; padding-top: 30px; }
   .done .tick { font-size: 64px; }
 </style>
@@ -93,14 +90,7 @@ window.google = { script: { get run() {
    ===================================================================== */
 
 const MIC_W = '<svg width="44" height="44" viewBox="0 0 24 24" fill="#fff"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-2.08A7 7 0 0 0 19 12h-2z"/></svg>';
-/* Steps depend on the kind of quote: buy, rent, or both (one quote, client picks). */
-function steps() {
-  const s = ['client', 'kind', 'description', 'total', 'discount', 'deposit'];
-  if (S.a.kind === 'both') s.push('rentTotal', 'rentDeposit');
-  s.push('message');
-  return s;
-}
-const KIND_LABEL = { buy: 'Buy', rent: 'Rent', both: 'Buy or rent (client chooses)' };
+const STEPS = ['client', 'description', 'total', 'discount', 'deposit', 'message'];
 const MIC_SVG = '<svg width="26" height="26" viewBox="0 0 24 24" fill="#111"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-2.08A7 7 0 0 0 19 12h-2z"/></svg>';
 
 let CLIENTS = null, clientsErr = '';
@@ -108,16 +98,16 @@ let PIN = '';
 let S = blank();
 function blank() {
   return { mode: 'step', i: 0, fromReview: false,
-           a: { client: '', kind: '', description: '', total: '', discount: '', deposit: '', rentTotal: '', rentDeposit: '', message: '' },
+           a: { client: '', description: '', total: '', discount: '', deposit: '', message: '' },
            customer: null, result: null, error: '' };
 }
 try { PIN = localStorage.getItem('wd_pin') || ''; } catch (e) {}
 try {
-  const d = JSON.parse(localStorage.getItem('wd_draft3') || 'null');
+  const d = JSON.parse(localStorage.getItem('wd_draft2') || 'null');
   if (d && d.a) { S.a = Object.assign(S.a, d.a); S.customer = d.customer || null; S.i = d.i || 0; }
 } catch (e) {}
-function saveDraft() { try { localStorage.setItem('wd_draft3', JSON.stringify({ a: S.a, customer: S.customer, i: S.i })); } catch (e) {} }
-function clearDraft() { try { localStorage.removeItem('wd_draft3'); } catch (e) {} }
+function saveDraft() { try { localStorage.setItem('wd_draft2', JSON.stringify({ a: S.a, customer: S.customer, i: S.i })); } catch (e) {} }
+function clearDraft() { try { localStorage.removeItem('wd_draft2'); } catch (e) {} }
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -249,8 +239,7 @@ function values() {
   const d = parseDiscount(S.a.discount, t);
   const pays = t != null && d ? Math.round((t - d.amt) * 100) / 100 : null;
   const dep = parseAmount(S.a.deposit);
-  const rt = parseAmount(S.a.rentTotal), rdep = parseAmount(S.a.rentDeposit);
-  return { t, d, pays, dep, rt, rdep };
+  return { t, d, pays, dep };
 }
 function problem(k) {
   const v = values();
@@ -258,30 +247,18 @@ function problem(k) {
   if (k === 'description' && !S.a.description.trim()) return 'Describe the dress first.';
   if (k === 'total' && v.t == null) return 'I didn’t catch an amount. Try “45 000”.';
   if (k === 'discount') { if (!v.d) return 'Say an amount (“5 000”) or a percentage (“10 percent”), or tap No discount.'; if (v.d.amt >= v.t) return 'The discount is more than the total.'; }
-  if (k === 'kind' && !KIND_LABEL[S.a.kind]) return 'Tap Buy, Rent or Both.';
   if (k === 'deposit') { if (v.dep == null) return 'I didn’t catch the deposit. Try “20 000”.'; if (v.dep > v.pays) return 'The deposit is more than what the client pays.'; }
-  if (k === 'rentTotal' && v.rt == null) return 'I didn’t catch the rental price. Try “18 000”.';
-  if (k === 'rentDeposit') { if (v.rdep == null) return 'I didn’t catch the rental deposit. Try “9 000”.'; if (v.rdep > v.rt) return 'The deposit is more than the rental price.'; }
   return '';
 }
 function next() {
-  const STEPS = steps(), k = STEPS[S.i], err = problem(k);
+  const k = STEPS[S.i], err = problem(k);
   if (err) { const w = $('err'); if (w) w.textContent = err; return; }
   if (S.fromReview || S.i === STEPS.length - 1) { S.mode = 'review'; S.fromReview = false; }
   else S.i++;
   saveDraft(); render();
 }
-function back() { if (S.mode === 'review') { S.mode = 'step'; S.i = steps().length - 1; } else if (S.i > 0) S.i--; render(); }
+function back() { if (S.mode === 'review') { S.mode = 'step'; S.i = STEPS.length - 1; } else if (S.i > 0) S.i--; render(); }
 function jump(i) { S.mode = 'step'; S.i = i; S.fromReview = true; render(); }
-function jumpTo(k) { jump(steps().indexOf(k)); }
-function pickKind(kind) {
-  const was = S.a.kind; S.a.kind = kind;
-  if (kind !== 'both') { S.a.rentTotal = ''; S.a.rentDeposit = ''; }
-  // Switching to "both" from the check screen: go on to the rental questions.
-  if (S.fromReview && kind === 'both' && was !== 'both') S.fromReview = false;
-  saveDraft(); next();
-}
-function setRentDeposit(pct) { const v = values(); if (v.rt == null) return; S.a.rentDeposit = String(Math.round(v.rt * pct) / 100); saveDraft(); render(); }
 function skip(k) { S.a[k] = ''; saveDraft(); next(); }
 function startAgain() {
   if (!confirm('Clear this whole quote and start again?')) { render(); return; }
@@ -304,10 +281,7 @@ function save() {
       customerId: S.customer.id, clientName: S.customer.name,
       description: S.a.description.trim(), total: v.t,
       discount: v.d.amt, discountPercent: v.d.pct,
-      deposit: v.dep, message: S.a.message.trim(),
-      kind: S.a.kind || 'buy',
-      rentTotal: S.a.kind === 'both' ? v.rt : null,
-      rentDeposit: S.a.kind === 'both' ? v.rdep : null
+      deposit: v.dep, message: S.a.message.trim()
     });
 }
 function fail(err) {
@@ -327,10 +301,7 @@ function submitPin() {
 const Q = {
   client:      { q: 'Who is the client?', hint: 'Type the first few letters of the name, then tap the right client from Zoho.', box: 'input', ph: 'Search Zoho clients…' },
   description: { q: 'Describe the dress', hint: 'Talk as long as you like. It all goes on the quote.', box: 'textarea', ph: 'e.g. Ivory silk mermaid gown with lace sleeves and a cathedral train' },
-  kind:        { q: 'Buy or rent?', hint: 'Both = one quote with both prices. The client chooses one.' },
   total:       { q: 'Total price?', hint: 'Including VAT.', box: 'input', ph: 'e.g. 45 000' },
-  rentTotal:   { q: 'Rental price?', hint: 'Including VAT. This is the rental option on the same quote.', box: 'input', ph: 'e.g. 18 000' },
-  rentDeposit: { q: 'Rental deposit?', hint: 'Say the amount, or tap a button.', box: 'input', ph: 'e.g. 9 000' },
   discount:    { q: 'Any discount?', hint: 'An amount or a percentage.', box: 'input', ph: 'e.g. 10 percent' },
   deposit:     { q: 'Deposit?', hint: 'Say the amount, or tap a button.', box: 'input', ph: 'e.g. 20 000' },
   message:     { q: 'Personal message to the client', hint: 'Optional. Admin adds it to the email.', box: 'textarea', ph: 'e.g. It was lovely meeting you…' }
@@ -347,21 +318,7 @@ function render() {
     return;
   }
   if (S.mode === 'step') {
-    const STEPS = steps();
-    if (S.i >= STEPS.length) S.i = STEPS.length - 1;
-    const k = STEPS[S.i], q = Object.assign({}, Q[k]);
-    if (k === 'total') q.q = S.a.kind === 'rent' ? 'Rental price?' : 'Purchase price?';
-    if (k === 'deposit' && S.a.kind === 'both') q.q = 'Purchase deposit?';
-    if (k === 'kind') {
-      const bar0 = STEPS.map((_, j) => '<i class="' + (j <= S.i ? 'on' : '') + '"></i>').join('');
-      const opt = (val, label, sub) => '<button class="kindbtn' + (S.a.kind === val ? ' on' : '') + '" onclick="pickKind(\'' + val + '\')">' + label + '<small>' + sub + '</small></button>';
-      app.innerHTML = '<div class="bar">' + bar0 + '</div><div class="step">Step ' + (S.i + 1) + ' of ' + STEPS.length + '</div>' +
-        '<h1>' + q.q + '</h1><div class="hint">' + q.hint + '</div>' +
-        opt('buy', 'Buy', 'Client buys the dress') + opt('rent', 'Rent', 'Client rents the dress') + opt('both', 'Both', 'One quote, client chooses buy or rent') +
-        '<div class="warn" id="err"></div><br><button class="link" onclick="startAgain()">Start the whole quote again</button>';
-      foot('<button onclick="' + (S.fromReview ? 'S.fromReview=false;S.mode=\'review\';render()' : 'back()') + '">Back</button><span></span>');
-      return;
-    }
+    const k = STEPS[S.i], q = Q[k];
     const bar = STEPS.map((_, j) => '<i class="' + (j <= S.i ? 'on' : '') + '"></i>').join('');
     const box = q.box === 'textarea'
       ? '<textarea id="f" autocapitalize="sentences" placeholder="' + esc(q.ph) + '"></textarea>'
@@ -370,7 +327,6 @@ function render() {
     if (k === 'client') extra = '<div id="clientArea"></div>';
     else if (k !== 'description' && k !== 'message') extra = '<div class="show" id="show"></div><div class="sub" id="showsub"></div>';
     if (k === 'deposit') extra += '<div class="chips"><button onclick="setDeposit(50)">50%</button><button onclick="setDeposit(40)">40%</button><button onclick="setDeposit(30)">30%</button></div>';
-    if (k === 'rentDeposit') extra += '<div class="chips"><button onclick="setRentDeposit(50)">50%</button><button onclick="setRentDeposit(40)">40%</button><button onclick="setRentDeposit(30)">30%</button></div>';
     app.innerHTML = '<div class="bar">' + bar + '</div><div class="step">Step ' + (S.i + 1) + ' of ' + STEPS.length + '</div>' +
       '<h1>' + q.q + '</h1><div class="hint">' + q.hint + '</div>' + box + extra +
       (k === 'client' ? '' : '<button class="bigmic" id="bigmic">' + MIC_W + 'Tap to talk</button><div class="micnote" id="micnote"></div>' +
@@ -398,18 +354,14 @@ function render() {
   }
   if (S.mode === 'review') {
     const v = values();
-    const row = (label, val, k, tall) => '<div class="row' + (tall ? ' tall' : '') + '"><b>' + label + '</b><span>' + val + '</span>' + (k ? '<button onclick="jumpTo(\'' + k + '\')">Change</button>' : '') + '</div>';
-    const both = S.a.kind === 'both', buyWord = S.a.kind === 'rent' ? 'Rental' : 'Purchase';
+    const row = (label, val, i, tall) => '<div class="row' + (tall ? ' tall' : '') + '"><b>' + label + '</b><span>' + val + '</span>' + (i != null ? '<button onclick="jump(' + i + ')">Change</button>' : '') + '</div>';
     let h = '<h1>Check the quote</h1><div class="review">' +
-      row('Client', esc(S.customer.name), 'client') +
-      row('Buy or rent', esc(KIND_LABEL[S.a.kind] || 'Buy'), 'kind') +
-      row('Dress', esc(S.a.description.trim()), 'description', true) +
-      row(buyWord + ' price', '<span class="total">' + fmt(v.t) + '</span>', 'total');
-    if (v.d.amt > 0) h += row('Discount', '− ' + fmt(v.d.amt) + (v.d.pct != null ? ' (' + v.d.pct + '%)' : ''), 'discount') + row('Client pays', '<span class="total">' + fmt(v.pays) + '</span>');
-    else h += row('Discount', 'None', 'discount');
-    h += row(both ? 'Purchase deposit' : 'Deposit', fmt(v.dep), 'deposit');
-    if (both) h += row('Rental price', '<span class="total">' + fmt(v.rt) + '</span>', 'rentTotal') + row('Rental deposit', fmt(v.rdep), 'rentDeposit');
-    h += row('Message', esc(S.a.message.trim() || '—'), 'message', true) + '</div>' +
+      row('Client', esc(S.customer.name), 0) +
+      row('Dress', esc(S.a.description.trim()), 1, true) +
+      row('Total', '<span class="total">' + fmt(v.t) + '</span>', 2);
+    if (v.d.amt > 0) h += row('Discount', '− ' + fmt(v.d.amt) + (v.d.pct != null ? ' (' + v.d.pct + '%)' : ''), 3) + row('Client pays', '<span class="total">' + fmt(v.pays) + '</span>');
+    else h += row('Discount', 'None', 3);
+    h += row('Deposit', fmt(v.dep), 4) + row('Message', esc(S.a.message.trim() || '—'), 5, true) + '</div>' +
       '<br><button class="link" onclick="startAgain()">Start the whole quote again</button>';
     app.innerHTML = h;
     foot('<button onclick="back()">Back</button><button class="primary" onclick="save()">Send to Admin</button>');
@@ -431,7 +383,7 @@ function render() {
 /* Live feedback under the box, without rebuilding the screen */
 function paint() {
   if (S.mode !== 'step') return;
-  const k = steps()[S.i], v = values();
+  const k = STEPS[S.i], v = values();
   if (k === 'client') {
     const area = $('clientArea'), el = $('f'); if (!area) return;
     if (S.customer) { el.style.display = 'none'; area.innerHTML = '<div class="picked">✓ ' + esc(S.customer.name) + '<button onclick="unpick()">Change</button></div>'; return; }
@@ -456,11 +408,6 @@ function paint() {
   if (k === 'deposit') {
     if (v.dep == null) { show.className = 'show bad'; show.textContent = 'Not an amount yet'; }
     else { show.textContent = fmt(v.dep); if (v.pays) sub.textContent = 'Balance after deposit ' + fmt(v.pays - v.dep); }
-  }
-  if (k === 'rentTotal') { if (v.rt == null) { show.className = 'show bad'; show.textContent = 'Not an amount yet'; } else show.textContent = fmt(v.rt); }
-  if (k === 'rentDeposit') {
-    if (v.rdep == null) { show.className = 'show bad'; show.textContent = 'Not an amount yet'; }
-    else { show.textContent = fmt(v.rdep); if (v.rt) sub.textContent = 'Rental balance after deposit ' + fmt(v.rt - v.rdep); }
   }
 }
 
