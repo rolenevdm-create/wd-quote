@@ -299,7 +299,7 @@ function submitPin() {
 
 /* ---------- Screens ---------- */
 const Q = {
-  client:      { q: 'Who is the client?', hint: 'Say the name. Then tap it in the list.', box: 'input', ph: 'Client name' },
+  client:      { q: 'Who is the client?', hint: 'Type the first few letters of the name, then tap the right client from Zoho.', box: 'input', ph: 'Search Zoho clients…' },
   description: { q: 'Describe the dress', hint: 'Talk as long as you like. It all goes on the quote.', box: 'textarea', ph: 'e.g. Ivory silk mermaid gown with lace sleeves and a cathedral train' },
   total:       { q: 'Total price?', hint: 'Including VAT.', box: 'input', ph: 'e.g. 45 000' },
   discount:    { q: 'Any discount?', hint: 'An amount or a percentage.', box: 'input', ph: 'e.g. 10 percent' },
@@ -322,15 +322,15 @@ function render() {
     const bar = STEPS.map((_, j) => '<i class="' + (j <= S.i ? 'on' : '') + '"></i>').join('');
     const box = q.box === 'textarea'
       ? '<textarea id="f" autocapitalize="sentences" placeholder="' + esc(q.ph) + '"></textarea>'
-      : '<input id="f" autocomplete="off" ' + (k === 'client' ? 'autocapitalize="words"' : '') + ' placeholder="' + esc(q.ph) + '" enterkeyhint="next">';
+      : '<input id="f" autocomplete="off" ' + (k === 'client' ? 'type="search" autocapitalize="words"' : '') + ' placeholder="' + esc(q.ph) + '" enterkeyhint="next">';
     let extra = '';
     if (k === 'client') extra = '<div id="clientArea"></div>';
     else if (k !== 'description' && k !== 'message') extra = '<div class="show" id="show"></div><div class="sub" id="showsub"></div>';
     if (k === 'deposit') extra += '<div class="chips"><button onclick="setDeposit(50)">50%</button><button onclick="setDeposit(40)">40%</button><button onclick="setDeposit(30)">30%</button></div>';
     app.innerHTML = '<div class="bar">' + bar + '</div><div class="step">Step ' + (S.i + 1) + ' of ' + STEPS.length + '</div>' +
       '<h1>' + q.q + '</h1><div class="hint">' + q.hint + '</div>' + box + extra +
-      '<button class="bigmic" id="bigmic">' + MIC_W + 'Tap to talk</button><div class="micnote" id="micnote"></div>' +
-      '<div class="mic">' + MIC_SVG + '<div>Tap the <b>microphone on the keyboard</b> and speak.<br>Made a mistake? Say <b>“delete”</b>.</div></div>' +
+      (k === 'client' ? '' : '<button class="bigmic" id="bigmic">' + MIC_W + 'Tap to talk</button><div class="micnote" id="micnote"></div>' +
+      '<div class="mic">' + MIC_SVG + '<div>Tap the <b>microphone on the keyboard</b> and speak.<br>Made a mistake? Say <b>“delete”</b>.</div></div>') +
       '<div class="warn" id="err"></div>' +
       (k === 'discount' ? '<button class="link" onclick="skip(\'discount\')">No discount</button>' : '') +
       (k === 'message' ? '<button class="link" onclick="skip(\'message\')">No message</button>' : '') +
@@ -348,8 +348,8 @@ function render() {
       saveDraft(); $('err').textContent = ''; paint();
     });
     if (q.box === 'input') el.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); next(); } });
-    paint(); tryBigMic(k);
-    if (!(k === 'client' && S.customer) && !(SR && micOK !== false)) setTimeout(() => { el.focus(); const n = el.value.length; try { el.setSelectionRange(n, n); } catch (e) {} }, 60);
+    paint(); if (k !== 'client') tryBigMic(k);
+    if (!(k === 'client' && S.customer) && (k === 'client' || !(SR && micOK !== false))) setTimeout(() => { el.focus(); const n = el.value.length; try { el.setSelectionRange(n, n); } catch (e) {} }, 60);
     return;
   }
   if (S.mode === 'review') {
